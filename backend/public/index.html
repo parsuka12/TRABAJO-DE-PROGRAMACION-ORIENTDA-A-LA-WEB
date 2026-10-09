@@ -1,0 +1,89 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MRP Industrial</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1d2330;--card:#fff;--bd:#dde1e8;--ac:#1f6feb;--bad:#c62828;--mut:#6b7280}
+@media(prefers-color-scheme:dark){:root{--bg:#12151c;--fg:#e6e9ef;--card:#1b1f29;--bd:#2d3342;--ac:#5b9dff;--bad:#ff6b6b;--mut:#9aa3b2}}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{padding:12px 20px;border-bottom:1px solid var(--bd);background:var(--card);display:flex;justify-content:space-between;align-items:center}h1{margin:0;font-size:18px}
+main{display:grid;grid-template-columns:minmax(300px,400px) 1fr;gap:16px;padding:16px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px;margin-bottom:16px}
+h2{font-size:14px;margin:0 0 10px}textarea{width:100%;height:300px;font:12px ui-monospace,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:8px}
+input{background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:6px;padding:7px;width:100%;margin-bottom:8px}
+input.n{width:90px;margin:0;padding:3px 6px}
+button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:600;margin:2px 4px 2px 0}
+button.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}button:disabled{opacity:.4;cursor:not-allowed}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border:1px solid var(--bd);padding:4px 7px;text-align:right;white-space:nowrap}th{background:var(--bg)}td:first-child,th:first-child{text-align:left}
+.late{color:var(--bad);font-weight:700}.neg{color:var(--bad)}.mut{color:var(--mut)}
+.tree ul{list-style:none;margin:0;padding-left:18px;border-left:1px dashed var(--bd)}.tree>ul{border:0;padding:0}
+.tree li{padding:2px 0}.tag{color:var(--mut);font-size:11px}.err{color:var(--bad);margin-top:6px;white-space:pre-wrap}[hidden]{display:none!important}
+</style></head><body>
+<div id="login" class="card" style="max-width:320px;margin:70px auto"><h2>MRP Industrial · Ingresar</h2>
+<input id="u" type="email" placeholder="Email"><input id="p" type="password" placeholder="Clave" onkeydown="if(event.key=='Enter')entrar()">
+<button onclick="entrar()">Entrar</button><div id="lerr" class="err"></div></div>
+
+<div id="app" hidden>
+<header><h1>MRP Industrial</h1><div><span id="who" class="mut"></span> <button class="s" onclick="salir()">Salir</button></div></header>
+<main><section>
+ <div class="card" id="cjson"><h2>Datos (JSON) — solo planificador</h2><textarea id="in" spellcheck="false"></textarea>
+  <div>Horizonte: <input id="hz" class="n" type="number" value="12" min="1" max="104"></div>
+  <button onclick="guardar()">Guardar</button><button onclick="ejecutar()">Ejecutar MRP</button>
+  <button class="s" onclick="ejemplo()">Cargar ejemplo</button><div id="err" class="err"></div></div>
+ <div class="card"><h2>Inventario</h2><div class="tw"><table id="inv"></table></div><div id="ierr" class="err"></div></div>
+ <div class="card"><h2>Historial de corridas</h2><div id="hist"></div></div>
+</section><section id="out"><div class="card mut">Ejecuta el MRP o abre una corrida del historial.</div></section></main></div>
+
+<script>
+const $=id=>document.getElementById(id),f=n=>Number.isInteger(n)?n:n.toFixed(1);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let tok=sessionStorage.t,me=JSON.parse(sessionStorage.me||'null'),codigos=[];
+async function api(p,o={}){
+ const r=await fetch(p,{method:o.method||'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:o.body&&JSON.stringify(o.body)});
+ const j=await r.json(); if(r.status==401){salir();throw new Error('Sesión vencida')}
+ if(!j.success)throw new Error(j.message); return j.data}
+async function entrar(){
+ try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('u').value,password:$('p').value})});
+  const j=await r.json(); if(!j.success)throw new Error(j.message);
+  tok=j.data.token;me=j.data.user;sessionStorage.t=tok;sessionStorage.me=JSON.stringify(me);inicio()}
+ catch(e){$('lerr').textContent=e.message}}
+function salir(){sessionStorage.clear();location.reload()}
+function inicio(){
+ $('login').hidden=true;$('app').hidden=false;$('who').textContent=`${me.name} · ${me.role}`;
+ $('cjson').hidden=me.role!='planificador';cargar();historial()}
+async function cargar(){
+ const d=await api('/api/mrp/data');$('in').value=JSON.stringify(d,null,1);
+ codigos=Object.keys(d.items);const ed=me.role!='consulta';
+ $('inv').innerHTML='<tr><th>Ítem</th><th>Nombre</th><th>Stock</th><th></th></tr>'+codigos.map((c,i)=>
+  `<tr><td>${esc(c)}</td><td>${esc(d.items[c].nombre)}</td><td><input class="n" id="st${i}" type="number" value="${d.items[c].stock}" ${ed?'':'disabled'}></td>
+  <td><button ${ed?'':'disabled'} onclick="setStock(${i})">Guardar</button></td></tr>`).join('')}
+async function setStock(i){
+ try{await api('/api/mrp/stock/'+encodeURIComponent(codigos[i]),{method:'PATCH',body:{stock:parseFloat($('st'+i).value)}});
+  $('ierr').className='err mut';$('ierr').textContent='Stock actualizado'}
+ catch(e){$('ierr').className='err';$('ierr').textContent=e.message}}
+async function ejemplo(){$('in').value=JSON.stringify(await api('/api/mrp/example'),null,1)}
+async function guardar(){let d;
+ try{d=JSON.parse($('in').value)}catch(e){$('err').textContent='JSON inválido: '+e.message;return}
+ try{await api('/api/mrp/data',{method:'PUT',body:d});await cargar();$('err').textContent='Guardado'}catch(e){$('err').textContent=e.message}}
+async function ejecutar(){$('err').textContent='';
+ try{render(await api('/api/mrp/run',{method:'POST',body:{horizonte:+$('hz').value}}));historial()}catch(e){$('err').textContent=e.message}}
+async function historial(){const l=await api('/api/mrp/runs');
+ $('hist').innerHTML=l.length?l.map(c=>`<button class="s" onclick="abrir(${c.id})">#${c.id} · ${esc(c.usuario)} · ${new Date(c.fecha).toLocaleString()}</button>`).join(''):'<span class="mut">Sin corridas</span>'}
+async function abrir(id){render(await api('/api/mrp/runs/'+id))}
+function tree(n){return `<li><b>${esc(n.item)}</b> ${esc(n.nombre)} <span class="tag">× ${f(n.qty)} por unidad final · nivel ${n.nivel}</span>`+
+ (n.hijos.length?`<ul>${n.hijos.map(tree).join('')}</ul>`:'')+'</li>'}
+function grid(c,it,T){
+ const row=(l,a,k)=>`<tr><td>${l}</td>${a.map(v=>`<td class="${v<0?'neg':(!v&&k!=='p'?'mut':'')}">${f(v)}</td>`).join('')}</tr>`;
+ return `<div class="card"><h2>${esc(c)} · ${esc(it.nombre)} <span class="tag">nivel ${it.nivel} · LT ${it.lead_time}</span></h2><div class="tw"><table>
+ <tr><th>Periodo</th>${[...Array(T).keys()].map(t=>`<th>${t}</th>`).join('')}</tr>
+ ${row('Necesidades brutas',it.bruto)}${row('Recepciones programadas',it.recepciones)}${row('Disponible proyectado',it.proyectado,'p')}
+ ${row('Necesidad neta',it.neto)}${row('Recepción planificada',it.recepcion_plan)}${row('Lanzamiento de orden',it.lanzamiento)}</table></div></div>`}
+function render(j){const T=j.horizonte;
+ $('out').innerHTML=`<div class="card tree"><h2>Árbol de producto (explosión recursiva)</h2><ul>${j.arboles.map(tree).join('')}</ul></div>
+ <div class="card"><h2>Órdenes planificadas (${j.ordenes.length})${j.id?' · corrida #'+j.id:''}</h2><div class="tw"><table>
+ <tr><th>Ítem</th><th>Tipo</th><th>Nivel</th><th>Cantidad</th><th>Lanzar en</th><th>Recibir en</th><th>Estado</th></tr>
+ ${j.ordenes.map(o=>`<tr><td>${esc(o.item)} ${esc(o.nombre)}</td><td>${o.tipo}</td><td>${o.nivel}</td><td>${f(o.qty)}</td><td>${o.lanzar}</td><td>${o.recibir}</td>
+ <td class="${o.atrasada?'late':''}">${o.atrasada?'ATRASADA (lead time insuficiente)':'OK'}</td></tr>`).join('')}</table></div></div>`+
+ j.orden_proceso.map(c=>grid(c,j.items[c],T)).join('')}
+if(tok&&me)inicio();
+</script></body></html>
