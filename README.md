@@ -2,7 +2,7 @@
 
 
 
-API REST (Node.js + Express + PostgreSQL) para gestionar articulos y, a futuro, calcular los materiales necesarios para produccion (MRP). Incluye un frontend simple servido por el propio backend.
+API REST (Node.js + Express + PostgreSQL) para gestionar artículos y, a futuro, calcular los materiales necesarios para producción (MRP). Incluye un frontend simple servido por el propio backend.
 
 
 
@@ -10,11 +10,11 @@ API REST (Node.js + Express + PostgreSQL) para gestionar articulos y, a futuro, 
 
 
 
-La raiz tiene: backend/ (codigo del servidor), docs/ (documentacion: esquema.sql, api.md, algoritmo.md), frontend/ (interfaz web) y este README.md.
+La raíz tiene: backend/ (código del servidor), docs/ (documentación: esquema.sql, api.md, algoritmo.md), frontend/ (interfaz web) y este README.md.
 
 
 
-El backend sirve los archivos de frontend/ como estaticos, asi que al levantar el servidor la interfaz queda disponible directamente en http://localhost:3000.
+El backend sirve los archivos de frontend/ como estáticos, así que al levantar el servidor la interfaz queda disponible directamente en http://localhost:3000.
 
 
 
@@ -28,7 +28,7 @@ El backend sirve los archivos de frontend/ como estaticos, asi que al levantar e
 
 
 
-\## Instalacion
+\## Instalación
 
 
 
@@ -54,11 +54,11 @@ npm install
 
 
 
-\## Configuracion del archivo .env
+\## Configuración del archivo .env
 
 
 
-Dentro de backend/ crear un archivo .env (no se sube al repositorio, esta ignorado en .gitignore) con las siguientes variables:
+Dentro de backend/ crear un archivo .env (no se sube al repositorio, está ignorado en .gitignore) con las siguientes variables:
 
 
 
@@ -80,7 +80,7 @@ DB\_PASSWORD=tu\_clave
 
 
 
-El esquema de tablas esta documentado y listo para ejecutar en docs/esquema.sql. Con la base de datos ya creada en PostgreSQL, se puede cargar asi:
+El esquema de tablas está documentado y listo para ejecutar en docs/esquema.sql. Con la base de datos ya creada en PostgreSQL, se puede cargar así:
 
 
 
@@ -98,7 +98,7 @@ node src/index.js
 
 
 
-Esto levanta el servidor en http://localhost:3000. La interfaz queda en la raiz (/) y la API en /api/articulos (ver docs/api.md para el detalle de endpoints).
+Esto levanta el servidor en http://localhost:3000. La interfaz queda en la raíz (/) y la API en /api/articulos (ver docs/api.md para el detalle de endpoints).
 
 
 
@@ -118,11 +118,11 @@ npm test
 
 1\. Copiar el proyecto completo (backend/, frontend/, docs/, .gitignore) al servidor, o clonarlo directamente con git clone (recordar hacer git checkout desde-cero).
 
-2\. Instalar Node.js y PostgreSQL en el servidor si no estan disponibles.
+2\. Instalar Node.js y PostgreSQL en el servidor si no están disponibles.
 
-3\. Crear la base de datos, cargar docs/esquema.sql y crear el archivo backend/.env con los datos de conexion del servidor.
+3\. Crear la base de datos, cargar docs/esquema.sql y crear el archivo backend/.env con los datos de conexión del servidor.
 
-4\. Instalar dependencias en modo produccion:
+4\. Instalar dependencias en modo producción:
 
 
 
@@ -154,9 +154,9 @@ pm2 startup
 
 
 
-6\. Verificar que la API responde en http://<ip-o-dominio-del-servidor>:<PORT>/api/health y que la interfaz carga en la raiz (/).
+6\. Verificar que la API responde en http://<ip-o-dominio-del-servidor>:<PORT>/api/health y que la interfaz carga en la raíz (/).
 
 
 
-Si el servidor esta detras de un proxy (Nginx, Apache, etc.), apuntar ese proxy al puerto configurado en PORT y, de ser necesario, configurar HTTPS ahi.
+Si el servidor está detrás de un proxy (Nginx, Apache, etc.), apuntar ese proxy al puerto configurado en PORT y, de ser necesario, configurar HTTPS ahí.to configurado en PORT y, de ser necesario, configurar HTTPS ahi.
 
