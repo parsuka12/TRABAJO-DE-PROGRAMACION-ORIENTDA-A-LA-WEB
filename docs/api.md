@@ -61,3 +61,16 @@ En este ejemplo se intenta dejar el stock del artículo con ID 1 en 50 unidades.
 ## Estado actual
 
 Las rutas y el controlador de artículos ya están creados. La conexión y las pruebas con datos reales quedan pendientes de verificar cuando la base de datos esté montada y configurada.
+## Estado actual
+
+Las rutas se probaron con datos reales en PostgreSQL (servidor de DigitalOcean):
+
+| Prueba | Resultado |
+|---|---|
+| GET /api/articulos | Devuelve los artículos guardados en la base de datos |
+| PUT /api/articulos/:id/stock con un número válido | 200: actualiza el stock y se ve el cambio en la tabla |
+| PUT /api/articulos/:id/stock con un número negativo | 400: el stock no cambia |
+| PUT /api/articulos/:id/stock con un texto | 400: el stock no cambia |
+| PUT /api/articulos/:id/stock con un id que no existe | 404: "No se encontró el artículo" |
+
+Nota: los IDs dependen de los datos cargados. Con `docs/datos_ejemplo.sql` en una base nueva, BICI suele tener el id 1.
