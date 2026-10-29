@@ -19,3 +19,9 @@ ON CONFLICT DO NOTHING;
 -- Demanda: 50 bicicletas en el periodo 4
 INSERT INTO demandas (articulo_id, periodo, cantidad)
 SELECT id, 4, 50 FROM articulos WHERE codigo = 'BICI';
+
+
+-- Ejemplo: llegan 20 ruedas en el periodo 2.
+-- Cargar DESPUES de docs/datos_ejemplo.sql.
+INSERT INTO recepciones (articulo_id, periodo, cantidad)
+SELECT id, 2, 20 FROM articulos WHERE codigo = 'RUEDA';
