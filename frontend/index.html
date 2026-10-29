@@ -22,81 +22,188 @@ button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 10
 .mut{color:var(--mut)}
 .err{color:var(--bad);margin-top:6px}
 .ok{color:var(--ac);margin-top:6px}
+.barra-busqueda {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.barra-busqueda input {
+  width: min(100%, 320px);
+  padding: 8px;
+}
 </style>
 </head>
 <body>
 <header><h1>MRP Industrial · Artículos</h1></header>
 <main>
-  <div class="card">
-    <h2>Artículos</h2>
-    <div id="contenido">Cargando...</div>
-    <div id="msg"></div>
+  <<div class="card">
+  <h2>Artículos</h2>
+
+  <div class="barra-busqueda">
+    <input
+      id="buscar"
+      type="search"
+      placeholder="Buscar por código o nombre"
+      oninput="mostrarArticulos()"
+    >
+    <button type="button" onclick="cargarArticulos()">
+      Actualizar lista
+    </button>
   </div>
+
+  <div id="contenido">Cargando...</div>
+  <div id="msg"></div>
+</div>
 </main>
 
 <script>
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;'
+}[c]));
+
+let articulosCargados = [];
+
+// Cargar articulos desde el backend
 async function cargarArticulos() {
   const cont = $('contenido');
   const msg = $('msg');
-  msg.textContent = '';
-  try {
-    const r = await fetch('/api/articulos');
-    const articulos = await r.json();
 
-    if (!Array.isArray(articulos) || articulos.length === 0) {
-      cont.innerHTML = '<p class="mut">No hay artículos para mostrar.</p>';
-      return;
+  msg.className = '';
+  msg.textContent = '';
+  cont.textContent = 'Cargando articulos...';
+
+  try {
+    const respuesta = await fetch('/api/articulos');
+
+    if (!respuesta.ok) {
+      throw new Error('No se pudieron cargar los articulos.');
     }
 
-    cont.innerHTML = `<table>
-      <tr><th>Código</th><th>Nombre</th><th>Stock</th><th>Stock seguridad</th><th>Tiempo entrega</th><th>Lote mínimo</th><th>Múltiplo</th><th></th></tr>
-      ${articulos.map((a) => `
-        <tr>
-          <td>${esc(a.codigo)}</td>
-          <td>${esc(a.nombre)}</td>
-          <td><input type="number" min="0" id="stock${a.id}" value="${a.stock}"></td>
-          <td>${a.stock_seguridad}</td>
-          <td>${a.tiempo_entrega}</td>
-          <td>${a.lote_minimo}</td>
-          <td>${a.multiplo}</td>
-          <td><button onclick="guardarStock(${a.id})">Guardar</button></td>
-        </tr>`).join('')}
-    </table>`;
-  } catch (e) {
+    const datos = await respuesta.json();
+    articulosCargados = Array.isArray(datos) ? datos : [];
+
+    mostrarArticulos();
+  } catch (error) {
     cont.innerHTML = '';
     msg.className = 'err';
-    msg.textContent = 'No se pudo conectar con el servidor: ' + e.message;
+    msg.textContent = 'Error al cargar articulos: ' + error.message;
   }
 }
 
+// Buscar por codigo o nombre
+function mostrarArticulos() {
+  const cont = $('contenido');
+  const filtro = $('buscar').value.trim().toLowerCase();
+
+  const articulos = articulosCargados.filter((articulo) =>
+    String(articulo.codigo || '').toLowerCase().includes(filtro) ||
+    String(articulo.nombre || '').toLowerCase().includes(filtro)
+  );
+
+  if (articulos.length === 0) {
+    cont.innerHTML = articulosCargados.length === 0
+      ? '<p class="mut">No hay articulos para mostrar.</p>'
+      : '<p class="mut">No se encontraron articulos con esa busqueda.</p>';
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th>Codigo</th>
+            <th>Nombre</th>
+            <th>Stock</th>
+            <th>Stock seguridad</th>
+            <th>Tiempo entrega</th>
+            <th>Lote minimo</th>
+            <th>Multiplo</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${articulos.map((a) => `
+            <tr>
+              <td>${esc(a.codigo)}</td>
+              <td>${esc(a.nombre)}</td>
+              <td>
+                <input
+                  class="stock-input"
+                  type="number"
+                  min="0"
+                  step="any"
+                  id="stock${Number(a.id)}"
+                  value="${esc(a.stock ?? 0)}"
+                >
+              </td>
+              <td>${esc(a.stock_seguridad ?? 0)}</td>
+              <td>${esc(a.tiempo_entrega ?? 0)}</td>
+              <td>${esc(a.lote_minimo ?? 0)}</td>
+              <td>${esc(a.multiplo ?? 1)}</td>
+              <td>
+                <button onclick="guardarStock(${Number(a.id)})">
+                  Guardar
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Actualizar el stock de un articulo
 async function guardarStock(id) {
   const msg = $('msg');
-  const valor = Number($('stock' + id).value);
+  const campo = $('stock' + id);
+  const texto = campo.value;
+  const valor = Number(texto);
 
-  if (!Number.isFinite(valor) || valor < 0) {
+  if (texto.trim() === '' || !Number.isFinite(valor) || valor < 0) {
     msg.className = 'err';
-    msg.textContent = 'El stock debe ser un número mayor o igual a cero.';
+    msg.textContent = 'El stock debe ser un numero mayor o igual a cero.';
     return;
   }
 
   try {
-    const r = await fetch(`/api/articulos/${id}/stock`, {
+    const respuesta = await fetch(`/api/articulos/${id}/stock`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ stock: valor })
     });
-    const j = await r.json();
 
-    if (!r.ok) throw new Error(j.mensaje || 'Error al actualizar el stock');
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(resultado.mensaje || 'Error al actualizar el stock.');
+    }
+
+    const articulo = articulosCargados.find(
+      (a) => Number(a.id) === Number(id)
+    );
+
+    if (articulo) {
+      articulo.stock = valor;
+    }
+
+    mostrarArticulos();
 
     msg.className = 'ok';
-    msg.textContent = j.mensaje || 'Stock actualizado correctamente';
-  } catch (e) {
+    msg.textContent = resultado.mensaje || 'Stock actualizado correctamente.';
+  } catch (error) {
     msg.className = 'err';
-    msg.textContent = e.message;
+    msg.textContent = error.message;
   }
 }
 
