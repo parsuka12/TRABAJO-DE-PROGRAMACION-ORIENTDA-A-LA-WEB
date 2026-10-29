@@ -83,3 +83,9 @@ La conexion se crea en `backend/src/config/db.js` con un `Pool` de la libreria `
 | BICI | 50 - 10 en stock = 40 | 40 | 3 |
 | RUEDA | 40 x 2 = 80, menos 40 en stock = 40 | 40 | 2 |
 | CUADRO | 40 x 1 = 40, menos 15 en stock = 25 | 25 | 1 (tiempo de entrega 2) |
+
+Indices para acelerar las consultas por clave foranea
+CREATE INDEX IF NOT EXISTS idx_bom_componente ON bom(componente_id);
+CREATE INDEX IF NOT EXISTS idx_demandas_articulo ON demandas(articulo_id);
+CREATE INDEX IF NOT EXISTS idx_recepciones_articulo ON recepciones(articulo_id);
+
