@@ -56,6 +56,33 @@ button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 10
   <div id="contenido">Cargando...</div>
   <div id="msg"></div>
 </div>
+<div class="card">
+  <h2>Calcular requerimientos (MRP)</h2>
+
+  <p class="mut">
+    Calcula los materiales necesarios y las órdenes planificadas.
+  </p>
+
+  <div class="barra-busqueda">
+    <label for="horizonteMrp">Horizonte (periodos):</label>
+
+    <input
+      id="horizonteMrp"
+      type="number"
+      min="1"
+      max="60"
+      step="1"
+      value="12"
+    >
+
+    <button type="button" onclick="ejecutarMrp()">
+      Calcular MRP
+    </button>
+  </div>
+
+  <div id="mrpMsg" aria-live="polite"></div>
+  <div id="mrpResultado"></div>
+</div>
 </main>
 
 <script>
@@ -206,7 +233,100 @@ async function guardarStock(id) {
     msg.textContent = error.message;
   }
 }
+// Ejecutar el cálculo de requerimientos MRP
+async function ejecutarMrp() {
+  const campo = $('horizonteMrp');
+  const msg = $('mrpMsg');
+  const cont = $('mrpResultado');
+  const horizonte = Number(campo.value);
 
+  msg.className = '';
+  msg.textContent = '';
+  cont.innerHTML = '';
+
+  if (!Number.isInteger(horizonte) || horizonte < 1 || horizonte > 60) {
+    msg.className = 'err';
+    msg.textContent = 'El horizonte debe ser un entero entre 1 y 60.';
+    return;
+  }
+
+  msg.textContent = 'Calculando materiales...';
+
+  try {
+    const respuesta = await fetch('/api/mrp/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ horizonte })
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(
+        resultado.mensaje || 'No se pudo realizar el cálculo MRP.'
+      );
+    }
+
+    const ordenes = Array.isArray(resultado.ordenes)
+      ? resultado.ordenes
+      : [];
+
+    if (ordenes.length === 0) {
+      msg.className = 'ok';
+      msg.textContent = 'Cálculo terminado. No se generaron órdenes.';
+      cont.innerHTML =
+        '<p class="mut">No hay órdenes planificadas para mostrar.</p>';
+      return;
+    }
+
+    cont.innerHTML = `
+      <h3>Órdenes planificadas</h3>
+      <p class="mut">
+        Horizonte calculado: ${esc(resultado.horizonte)} períodos.
+      </p>
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Código</th>
+              <th>Artículo</th>
+              <th>Cantidad</th>
+              <th>Nivel</th>
+              <th>Lanzamiento</th>
+              <th>Recepción</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ordenes.map((orden) => `
+              <tr>
+                <td>${esc(orden.tipo)}</td>
+                <td>${esc(orden.item)}</td>
+                <td>${esc(orden.nombre)}</td>
+                <td>${esc(orden.qty)}</td>
+                <td>${esc(orden.nivel)}</td>
+                <td>${esc(orden.lanzar)}</td>
+                <td>${esc(orden.recibir)}</td>
+                <td>${orden.atrasada ? 'Atrasada' : 'A tiempo'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    msg.className = 'ok';
+    msg.textContent =
+      'Cálculo realizado. Se muestran las órdenes generadas.';
+
+  } catch (error) {
+    msg.className = 'err';
+    msg.textContent = 'Error al calcular el MRP: ' + error.message;
+  }
+}
 cargarArticulos();
 </script>
 </body>
