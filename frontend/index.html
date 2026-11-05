@@ -80,6 +80,35 @@ button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 10
     </button>
   </div>
 
+  <h3>Demandas de producción</h3>
+
+<div class="barra-busqueda">
+  <select id="articuloDemanda">
+    <option value="BICI">BICI - Bicicleta</option>
+    <option value="RUEDA">RUEDA - Rueda</option>
+  </select>
+
+  <input
+    id="cantidadDemanda"
+    type="number"
+    min="1"
+    placeholder="Cantidad"
+  >
+
+  <input
+    id="periodoDemanda"
+    type="number"
+    min="1"
+    placeholder="Período"
+  >
+
+  <button type="button" onclick="agregarDemanda()">
+    Agregar demanda
+  </button>
+</div>
+
+<div id="listaDemandas"></div>
+
   <div id="mrpMsg" aria-live="polite"></div>
   <div id="mrpResultado"></div>
 </div>
@@ -234,6 +263,80 @@ async function guardarStock(id) {
   }
 }
 // Ejecutar el cálculo de requerimientos MRP
+// Almacenar las demandas ingresadas
+let demandasMRP = [];
+
+// Agregar una demanda
+function agregarDemanda() {
+  const item = $('articuloDemanda').value;
+  const cantidad = Number($('cantidadDemanda').value);
+  const periodo = Number($('periodoDemanda').value);
+  const horizonte = Number($('horizonteMrp').value);
+
+  if (!Number.isInteger(cantidad) || cantidad <= 0) {
+    alert('Ingresa una cantidad válida mayor que cero.');
+    return;
+  }
+
+  if (!Number.isInteger(periodo) || periodo < 1 || periodo > horizonte) {
+    alert('El período debe estar dentro del horizonte de planificación.');
+    return;
+  }
+
+  demandasMRP.push({
+    item,
+    periodo: periodo - 1,
+    qty: cantidad
+  });
+
+  mostrarDemandas();
+
+  $('cantidadDemanda').value = '';
+  $('periodoDemanda').value = '';
+}
+
+// Mostrar demandas registradas
+function mostrarDemandas() {
+  const cont = $('listaDemandas');
+
+  if (demandasMRP.length === 0) {
+    cont.innerHTML = '<p class="mut">No hay demandas agregadas.</p>';
+    return;
+  }
+
+  cont.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Artículo</th>
+          <th>Cantidad</th>
+          <th>Período</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${demandasMRP.map((d, i) => `
+          <tr>
+            <td>${esc(d.item)}</td>
+            <td>${d.qty}</td>
+            <td>${d.periodo + 1}</td>
+            <td>
+              <button type="button" onclick="eliminarDemanda(${i})">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// Eliminar una demanda
+function eliminarDemanda(indice) {
+  demandasMRP.splice(indice, 1);
+  mostrarDemandas();
+}
 async function ejecutarMrp() {
   const campo = $('horizonteMrp');
   const msg = $('mrpMsg');
@@ -249,7 +352,11 @@ async function ejecutarMrp() {
     msg.textContent = 'El horizonte debe ser un entero entre 1 y 60.';
     return;
   }
-
+if (demandasMRP.length === 0) {
+  msg.className = 'err';
+  msg.textContent = 'Debes agregar al menos una demanda antes de calcular.';
+  return;
+}
   msg.textContent = 'Calculando materiales...';
 
   try {
@@ -258,7 +365,11 @@ async function ejecutarMrp() {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ horizonte })
+      body: JSON.stringify({
+  horizonte,
+  demanda: demandasMRP
+})
+
     });
 
     const resultado = await respuesta.json();
