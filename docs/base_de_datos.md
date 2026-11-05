@@ -89,3 +89,9 @@ CREATE INDEX IF NOT EXISTS idx_bom_componente ON bom(componente_id);
 CREATE INDEX IF NOT EXISTS idx_demandas_articulo ON demandas(articulo_id);
 CREATE INDEX IF NOT EXISTS idx_recepciones_articulo ON recepciones(articulo_id);
 
+## Lectura de datos para el MRP
+
+`backend/src/models/mrp.model.js` lee `articulos`, `bom`, `demandas` y `recepciones`
+y los entrega en el formato del motor (`backend/src/services/mrp.service.js`).
+Con los datos de `docs/datos_ejemplo.sql` el resultado esperado es BICI 40, RUEDA 40 y CUADRO 25.
+
