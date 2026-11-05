@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const { calcularMrp } = require('../controllers/mrp.controller');
+const { validarDemanda } = require('../middlewares/validarDemanda.middleware');
 
 const router = Router();
 
@@ -7,22 +8,22 @@ const router = Router();
  * @swagger
  * /api/mrp/run:
  *   post:
- *     summary: Ejecuta el cálculo del MRP
- *     description: Calcula la explosión de materiales y devuelve las órdenes de compra/producción.
+ *     summary: Ejecuta el cálculo del MRP con datos reales
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         'application/json':
  *           schema:
  *             type: object
  *             properties:
- *               horizonte:
- *                 type: integer
- *                 example: 10
+ *               horizonte: { type: integer, example: 10 }
+ *               item: { type: string, example: BICI }
+ *               periodo: { type: integer, example: 4 }
+ *               qty: { type: number, example: 50 }
  *     responses:
  *       200:
- *         description: Cálculo exitoso devolviendo el JSON con las órdenes.
+ *         description: Cálculo exitoso.
  */
-router.post('/run', calcularMrp);
+router.post('/run', validarDemanda, calcularMrp);
 
 module.exports = router;
