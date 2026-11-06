@@ -172,8 +172,8 @@ async function validarSinCiclos(articuloId, componenteId, cliente = pool) {
     throw new Error('Un artículo no puede ser componente de sí mismo');
   }
 
-  // Verificar si el componente ya es ancestro del artículo (crearía ciclo)
-  // Buscar hacia arriba: desde el componente, ¿podemos llegar al artículo padre?
+  // Verificar si el artículo (padre) ya es descendiente del componente (hijo)
+  // Buscar hacia abajo: desde el componente, ¿podemos llegar al artículo siguiendo la relación "usa"?
   const visitados = new Set();
   const pila = [componenteId];
 
@@ -185,13 +185,13 @@ async function validarSinCiclos(articuloId, componenteId, cliente = pool) {
     if (visitados.has(actual)) continue;
     visitados.add(actual);
 
-    // Buscar padres del componente actual
-    const padres = await cliente.query(
-      'SELECT articulo_id FROM bom WHERE componente_id = $1',
+    // Buscar hijos del actual (qué usa este artículo)
+    const hijos = await cliente.query(
+      'SELECT componente_id FROM bom WHERE articulo_id = $1',
       [actual]
     );
-    for (const fila of padres.rows) {
-      pila.push(fila.articulo_id);
+    for (const fila of hijos.rows) {
+      pila.push(fila.componente_id);
     }
   }
 }

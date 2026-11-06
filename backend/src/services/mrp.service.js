@@ -79,7 +79,8 @@ function mrp(items, demanda, T) {
 
     for (let t = 0; t < T; t++) {
       let p = oh + prog[t] - bruto[c][t];
-      if (p < ss) {
+      // Solo considerar stock de seguridad si hay requerimiento bruto en este período
+      if (p < ss && bruto[c][t] > 0) {
         neto[t] = ss - p;
         const rec = lote(neto[t], it);
         p += rec;
@@ -93,7 +94,7 @@ function mrp(items, demanda, T) {
           lanzar: lp, recibir: t, atrasada,
           tipo: (it.bom || []).length ? 'Producción' : 'Compra',
         });
-        for (const h of it.bom || []) bruto[h.item][lp] += rec * h.qty; // explosión a los hijos
+        for (const h of it.bom || []) bruto[h.item][lp] += rec * h.qty;
       }
       proy.push(p);
       oh = p;
