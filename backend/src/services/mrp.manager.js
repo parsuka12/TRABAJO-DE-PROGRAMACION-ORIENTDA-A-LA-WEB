@@ -1,15 +1,26 @@
 const { mrp } = require('./mrp.service');
-const MrpModel = require('../models/model'); 
+const MrpModel = require('../models/model');
 
-const procesarMrp = async (horizonte, item, periodo, qty) => {
-  const items = await MrpModel.obtenerDatosMrp();
-  
-  if (!items[item]) {
-    throw new Error(`El artículo '${item}' no existe en la base de datos.`);
+const procesarMrp = async (horizonte, filtroArticulo = null) => {
+  const { items, demanda } = await MrpModel.obtenerDatosMrp();
+
+  // Si se especifica un filtro de artículo, usar solo sus demandas
+  let demandaFiltrada = demanda;
+  if (filtroArticulo) {
+    if (!items[filtroArticulo]) {
+      throw new Error(`El artículo '${filtroArticulo}' no existe en la base de datos.`);
+    }
+    demandaFiltrada = demanda.filter(d => d.item === filtroArticulo);
+    if (demandaFiltrada.length === 0) {
+      throw new Error(`No hay demandas registradas para el artículo '${filtroArticulo}'.`);
+    }
   }
 
-  const demanda = [{ item, periodo: Number(periodo), qty: Number(qty) }];
-  const resultado = mrp(items, demanda, horizonte);
+  if (demandaFiltrada.length === 0) {
+    throw new Error('No hay demandas registradas en la base de datos para calcular el MRP.');
+  }
+
+  const resultado = mrp(items, demandaFiltrada, horizonte);
 
   const totalOrdenes = resultado.ordenes.length;
   const ordenesCompra = resultado.ordenes.filter(o => o.tipo === 'Compra').length;
@@ -23,7 +34,8 @@ const procesarMrp = async (horizonte, item, periodo, qty) => {
       ordenes_compra: ordenesCompra,
       ordenes_produccion: ordenesProduccion,
       ordenes_atrasadas: ordenesAtrasadas
-    }
+    },
+    demanda_utilizada: demandaFiltrada
   };
 };
 

@@ -8,6 +8,7 @@ const swaggerSpec = require('./config/swagger');
 
 const articulosRoutes = require('./routes/articulos.routes');
 const bomRoutes = require('./routes/bom.routes');
+const demandasRoutes = require('./routes/demandas.routes');
 const mrpRoutes = require('./routes/mrp.routes');
 const { errorHandler } = require('./middlewares/errorHandler.middleware');
 
@@ -27,6 +28,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/articulos', articulosRoutes);
 app.use('/api', bomRoutes);
+app.use('/api', demandasRoutes);
 app.use('/api/mrp', mrpRoutes);
 
 app.use(errorHandler);

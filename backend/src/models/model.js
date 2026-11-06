@@ -332,6 +332,232 @@ async function obtenerArbolBom(articuloId, nivel = 0, visitados = new Set()) {
   };
 }
 
+// ==================== DEMANDAS ====================
+
+async function obtenerDemandas(filtros = {}) {
+  let query = `
+    SELECT d.id, d.articulo_id, d.periodo, d.cantidad,
+           a.codigo as articulo_codigo, a.nombre as articulo_nombre
+    FROM demandas d
+    JOIN articulos a ON a.id = d.articulo_id
+  `;
+  const params = [];
+  const condiciones = [];
+
+  if (filtros.articuloId) {
+    params.push(filtros.articuloId);
+    condiciones.push(`d.articulo_id = $${params.length}`);
+  }
+  if (filtros.periodo !== undefined) {
+    params.push(filtros.periodo);
+    condiciones.push(`d.periodo = $${params.length}`);
+  }
+
+  if (condiciones.length > 0) {
+    query += ' WHERE ' + condiciones.join(' AND ');
+  }
+
+  query += ' ORDER BY d.periodo, a.codigo';
+
+  const resultado = await pool.query(query, params);
+  return resultado.rows;
+}
+
+async function obtenerDemandaPorId(id) {
+  const resultado = await pool.query(
+    `SELECT d.id, d.articulo_id, d.periodo, d.cantidad,
+            a.codigo as articulo_codigo, a.nombre as articulo_nombre
+     FROM demandas d
+     JOIN articulos a ON a.id = d.articulo_id
+     WHERE d.id = $1`,
+    [id]
+  );
+  return resultado.rows[0] || null;
+}
+
+async function crearDemanda({ articulo_id, periodo, cantidad }) {
+  const cliente = await pool.connect();
+  try {
+    await cliente.query('BEGIN');
+
+    // Verificar que el artículo existe
+    const articulo = await cliente.query('SELECT 1 FROM articulos WHERE id = $1', [articulo_id]);
+    if (articulo.rows.length === 0) {
+      throw new Error(`No existe el artículo con ID ${articulo_id}`);
+    }
+
+    const resultado = await cliente.query(
+      `INSERT INTO demandas (articulo_id, periodo, cantidad)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [articulo_id, periodo, cantidad]
+    );
+
+    await cliente.query('COMMIT');
+    return await obtenerDemandaPorId(resultado.rows[0].id);
+  } catch (error) {
+    await cliente.query('ROLLBACK');
+    throw error;
+  } finally {
+    cliente.release();
+  }
+}
+
+async function actualizarDemanda(id, datos) {
+  const campos = [];
+  const valores = [];
+  let idx = 1;
+
+  const camposPermitidos = ['periodo', 'cantidad'];
+
+  for (const [key, value] of Object.entries(datos)) {
+    if (camposPermitidos.includes(key)) {
+      campos.push(`${key} = $${idx}`);
+      valores.push(value);
+      idx++;
+    }
+  }
+
+  if (campos.length === 0) {
+    return null;
+  }
+
+  valores.push(id);
+  const resultado = await pool.query(
+    `UPDATE demandas SET ${campos.join(', ')} WHERE id = $${idx} RETURNING *`,
+    valores
+  );
+
+  if (resultado.rows.length === 0) {
+    return null;
+  }
+
+  return await obtenerDemandaPorId(id);
+}
+
+async function eliminarDemanda(id) {
+  const resultado = await pool.query('DELETE FROM demandas WHERE id = $1 RETURNING *', [id]);
+  return resultado.rows[0] || null;
+}
+
+async function eliminarDemandasPorArticulo(articuloId) {
+  const resultado = await pool.query('DELETE FROM demandas WHERE articulo_id = $1 RETURNING *', [articuloId]);
+  return resultado.rows;
+}
+
+// ==================== RECEPCIONES ====================
+
+async function obtenerRecepciones(filtros = {}) {
+  let query = `
+    SELECT r.id, r.articulo_id, r.periodo, r.cantidad,
+           a.codigo as articulo_codigo, a.nombre as articulo_nombre
+    FROM recepciones r
+    JOIN articulos a ON a.id = r.articulo_id
+  `;
+  const params = [];
+  const condiciones = [];
+
+  if (filtros.articuloId) {
+    params.push(filtros.articuloId);
+    condiciones.push(`r.articulo_id = $${params.length}`);
+  }
+  if (filtros.periodo !== undefined) {
+    params.push(filtros.periodo);
+    condiciones.push(`r.periodo = $${params.length}`);
+  }
+
+  if (condiciones.length > 0) {
+    query += ' WHERE ' + condiciones.join(' AND ');
+  }
+
+  query += ' ORDER BY r.periodo, a.codigo';
+
+  const resultado = await pool.query(query, params);
+  return resultado.rows;
+}
+
+async function obtenerRecepcionPorId(id) {
+  const resultado = await pool.query(
+    `SELECT r.id, r.articulo_id, r.periodo, r.cantidad,
+            a.codigo as articulo_codigo, a.nombre as articulo_nombre
+     FROM recepciones r
+     JOIN articulos a ON a.id = r.articulo_id
+     WHERE r.id = $1`,
+    [id]
+  );
+  return resultado.rows[0] || null;
+}
+
+async function crearRecepcion({ articulo_id, periodo, cantidad }) {
+  const cliente = await pool.connect();
+  try {
+    await cliente.query('BEGIN');
+
+    // Verificar que el artículo existe
+    const articulo = await cliente.query('SELECT 1 FROM articulos WHERE id = $1', [articulo_id]);
+    if (articulo.rows.length === 0) {
+      throw new Error(`No existe el artículo con ID ${articulo_id}`);
+    }
+
+    const resultado = await cliente.query(
+      `INSERT INTO recepciones (articulo_id, periodo, cantidad)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [articulo_id, periodo, cantidad]
+    );
+
+    await cliente.query('COMMIT');
+    return await obtenerRecepcionPorId(resultado.rows[0].id);
+  } catch (error) {
+    await cliente.query('ROLLBACK');
+    throw error;
+  } finally {
+    cliente.release();
+  }
+}
+
+async function actualizarRecepcion(id, datos) {
+  const campos = [];
+  const valores = [];
+  let idx = 1;
+
+  const camposPermitidos = ['periodo', 'cantidad'];
+
+  for (const [key, value] of Object.entries(datos)) {
+    if (camposPermitidos.includes(key)) {
+      campos.push(`${key} = $${idx}`);
+      valores.push(value);
+      idx++;
+    }
+  }
+
+  if (campos.length === 0) {
+    return null;
+  }
+
+  valores.push(id);
+  const resultado = await pool.query(
+    `UPDATE recepciones SET ${campos.join(', ')} WHERE id = $${idx} RETURNING *`,
+    valores
+  );
+
+  if (resultado.rows.length === 0) {
+    return null;
+  }
+
+  return await obtenerRecepcionPorId(id);
+}
+
+async function eliminarRecepcion(id) {
+  const resultado = await pool.query('DELETE FROM recepciones WHERE id = $1 RETURNING *', [id]);
+  return resultado.rows[0] || null;
+}
+
+async function eliminarRecepcionesPorArticulo(articuloId) {
+  const resultado = await pool.query('DELETE FROM recepciones WHERE articulo_id = $1 RETURNING *', [articuloId]);
+  return resultado.rows;
+}
+
 module.exports = {
   obtenerArticulos,
   obtenerArticuloPorId,
@@ -349,4 +575,18 @@ module.exports = {
   eliminarBom,
   obtenerArbolBom,
   validarSinCiclos,
+  // Demandas
+  obtenerDemandas,
+  obtenerDemandaPorId,
+  crearDemanda,
+  actualizarDemanda,
+  eliminarDemanda,
+  eliminarDemandasPorArticulo,
+  // Recepciones
+  obtenerRecepciones,
+  obtenerRecepcionPorId,
+  crearRecepcion,
+  actualizarRecepcion,
+  eliminarRecepcion,
+  eliminarRecepcionesPorArticulo,
 };

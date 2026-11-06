@@ -112,6 +112,60 @@ const options = {
             cantidad_total: { type: 'number', format: 'float', example: 2 },
           },
         },
+        Demanda: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            articulo_id: { type: 'integer', example: 1 },
+            periodo: { type: 'integer', example: 4 },
+            cantidad: { type: 'number', format: 'float', example: 50 },
+            articulo_codigo: { type: 'string', example: 'BICI' },
+            articulo_nombre: { type: 'string', example: 'Bicicleta' },
+          },
+        },
+        DemandaInput: {
+          type: 'object',
+          required: ['articulo_id', 'periodo', 'cantidad'],
+          properties: {
+            articulo_id: { type: 'integer', minimum: 1, example: 1 },
+            periodo: { type: 'integer', minimum: 0, example: 4 },
+            cantidad: { type: 'number', minimum: 0.01, example: 50 },
+          },
+        },
+        DemandaUpdate: {
+          type: 'object',
+          properties: {
+            periodo: { type: 'integer', minimum: 0, example: 5 },
+            cantidad: { type: 'number', minimum: 0.01, example: 60 },
+          },
+        },
+        Recepcion: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            articulo_id: { type: 'integer', example: 2 },
+            periodo: { type: 'integer', example: 2 },
+            cantidad: { type: 'number', format: 'float', example: 20 },
+            articulo_codigo: { type: 'string', example: 'RUEDA' },
+            articulo_nombre: { type: 'string', example: 'Rueda' },
+          },
+        },
+        RecepcionInput: {
+          type: 'object',
+          required: ['articulo_id', 'periodo', 'cantidad'],
+          properties: {
+            articulo_id: { type: 'integer', minimum: 1, example: 2 },
+            periodo: { type: 'integer', minimum: 0, example: 2 },
+            cantidad: { type: 'number', minimum: 0.01, example: 20 },
+          },
+        },
+        RecepcionUpdate: {
+          type: 'object',
+          properties: {
+            periodo: { type: 'integer', minimum: 0, example: 3 },
+            cantidad: { type: 'number', minimum: 0.01, example: 25 },
+          },
+        },
       },
     },
   },
