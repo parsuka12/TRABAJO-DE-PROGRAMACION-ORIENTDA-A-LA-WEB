@@ -66,6 +66,52 @@ const options = {
             },
           },
         },
+        BomItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            articulo_id: { type: 'integer', example: 1 },
+            componente_id: { type: 'integer', example: 2 },
+            cantidad: { type: 'number', format: 'float', example: 2 },
+            articulo_codigo: { type: 'string', example: 'BICI' },
+            articulo_nombre: { type: 'string', example: 'Bicicleta' },
+            componente_codigo: { type: 'string', example: 'RUEDA' },
+            componente_nombre: { type: 'string', example: 'Rueda' },
+          },
+        },
+        BomInput: {
+          type: 'object',
+          required: ['articulo_id', 'componente_id', 'cantidad'],
+          properties: {
+            articulo_id: { type: 'integer', minimum: 1, example: 1 },
+            componente_id: { type: 'integer', minimum: 1, example: 2 },
+            cantidad: { type: 'number', minimum: 0.01, example: 2 },
+          },
+        },
+        BomUpdate: {
+          type: 'object',
+          required: ['cantidad'],
+          properties: {
+            cantidad: { type: 'number', minimum: 0.01, example: 3 },
+          },
+        },
+        BomArbol: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            codigo: { type: 'string', example: 'BICI' },
+            nombre: { type: 'string', example: 'Bicicleta' },
+            nivel: { type: 'integer', example: 0 },
+            hijos: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/BomArbol',
+              },
+            },
+            cantidad: { type: 'number', format: 'float', example: 2 },
+            cantidad_total: { type: 'number', format: 'float', example: 2 },
+          },
+        },
       },
     },
   },
