@@ -1,13 +1,29 @@
 
 const pool = require('../config/db');
+const { obtenerDatosMrp } = require('./mrp.model');
+
+// Convertir campos NUMERIC de PostgreSQL (vienen como string) a Number
+function convertirNumericos(fila, campos) {
+  const resultado = { ...fila };
+  for (const campo of campos) {
+    if (resultado[campo] !== null && resultado[campo] !== undefined) {
+      resultado[campo] = Number(resultado[campo]);
+    }
+  }
+  return resultado;
+}
+
+function convertirArrayNumericos(filas, campos) {
+  return filas.map((f) => convertirNumericos(f, campos));
+}
 
 // Consultar todos los articulos
 async function obtenerArticulos() {
   const resultado = await pool.query(
     'SELECT * FROM articulos ORDER BY nombre'
   );
-
-  return resultado.rows;
+  const camposNumericos = ['stock', 'stock_seguridad', 'tiempo_entrega', 'lote_minimo', 'multiplo'];
+  return convertirArrayNumericos(resultado.rows, camposNumericos);
 }
 
 // Consultar un articulo por su id
@@ -16,8 +32,8 @@ async function obtenerArticuloPorId(id) {
     'SELECT * FROM articulos WHERE id = $1',
     [id]
   );
-
-  return resultado.rows[0] || null;
+  const camposNumericos = ['stock', 'stock_seguridad', 'tiempo_entrega', 'lote_minimo', 'multiplo'];
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], camposNumericos) : null;
 }
 
 // Consultar un articulo por su codigo
@@ -26,8 +42,8 @@ async function obtenerArticuloPorCodigo(codigo) {
     'SELECT * FROM articulos WHERE codigo = $1',
     [codigo]
   );
-
-  return resultado.rows[0] || null;
+  const camposNumericos = ['stock', 'stock_seguridad', 'tiempo_entrega', 'lote_minimo', 'multiplo'];
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], camposNumericos) : null;
 }
 
 // Crear un nuevo articulo
@@ -193,7 +209,7 @@ async function obtenerBomDeArticulo(articuloId) {
      ORDER BY c.codigo`,
     [articuloId]
   );
-  return resultado.rows;
+  return convertirArrayNumericos(resultado.rows, ['cantidad']);
 }
 
 // Obtener donde se usa un artículo como componente (padres)
@@ -209,7 +225,7 @@ async function obtenerDondeSeUsa(componenteId) {
      ORDER BY a.codigo`,
     [componenteId]
   );
-  return resultado.rows;
+  return convertirArrayNumericos(resultado.rows, ['cantidad']);
 }
 
 // Obtener una relación BOM específica por ID
@@ -224,7 +240,7 @@ async function obtenerBomPorId(id) {
      WHERE b.id = $1`,
     [id]
   );
-  return resultado.rows[0] || null;
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], ['cantidad']) : null;
 }
 
 // Crear una relación BOM
@@ -360,7 +376,7 @@ async function obtenerDemandas(filtros = {}) {
   query += ' ORDER BY d.periodo, a.codigo';
 
   const resultado = await pool.query(query, params);
-  return resultado.rows;
+  return convertirArrayNumericos(resultado.rows, ['cantidad', 'periodo']);
 }
 
 async function obtenerDemandaPorId(id) {
@@ -372,7 +388,7 @@ async function obtenerDemandaPorId(id) {
      WHERE d.id = $1`,
     [id]
   );
-  return resultado.rows[0] || null;
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], ['cantidad', 'periodo']) : null;
 }
 
 async function crearDemanda({ articulo_id, periodo, cantidad }) {
@@ -437,12 +453,12 @@ async function actualizarDemanda(id, datos) {
 
 async function eliminarDemanda(id) {
   const resultado = await pool.query('DELETE FROM demandas WHERE id = $1 RETURNING *', [id]);
-  return resultado.rows[0] || null;
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], ['cantidad', 'periodo']) : null;
 }
 
 async function eliminarDemandasPorArticulo(articuloId) {
   const resultado = await pool.query('DELETE FROM demandas WHERE articulo_id = $1 RETURNING *', [articuloId]);
-  return resultado.rows;
+  return convertirArrayNumericos(resultado.rows, ['cantidad', 'periodo']);
 }
 
 // ==================== RECEPCIONES ====================
@@ -473,7 +489,7 @@ async function obtenerRecepciones(filtros = {}) {
   query += ' ORDER BY r.periodo, a.codigo';
 
   const resultado = await pool.query(query, params);
-  return resultado.rows;
+  return convertirArrayNumericos(resultado.rows, ['cantidad', 'periodo']);
 }
 
 async function obtenerRecepcionPorId(id) {
@@ -485,7 +501,7 @@ async function obtenerRecepcionPorId(id) {
      WHERE r.id = $1`,
     [id]
   );
-  return resultado.rows[0] || null;
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], ['cantidad', 'periodo']) : null;
 }
 
 async function crearRecepcion({ articulo_id, periodo, cantidad }) {
@@ -550,12 +566,12 @@ async function actualizarRecepcion(id, datos) {
 
 async function eliminarRecepcion(id) {
   const resultado = await pool.query('DELETE FROM recepciones WHERE id = $1 RETURNING *', [id]);
-  return resultado.rows[0] || null;
+  return resultado.rows[0] ? convertirNumericos(resultado.rows[0], ['cantidad', 'periodo']) : null;
 }
 
 async function eliminarRecepcionesPorArticulo(articuloId) {
   const resultado = await pool.query('DELETE FROM recepciones WHERE articulo_id = $1 RETURNING *', [articuloId]);
-  return resultado.rows;
+  return convertirArrayNumericos(resultado.rows, ['cantidad', 'periodo']);
 }
 
 module.exports = {
@@ -589,4 +605,6 @@ module.exports = {
   actualizarRecepcion,
   eliminarRecepcion,
   eliminarRecepcionesPorArticulo,
+  // MRP
+  obtenerDatosMrp,
 };
