@@ -38,7 +38,7 @@ async function migrar() {
     // Crear tabla de control de migraciones si no existe
     await client.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
-        version VARCHAR(20) PRIMARY KEY,
+        version VARCHAR(100) PRIMARY KEY,
         aplicado_en TIMESTAMP DEFAULT NOW()
       );
     `);
