@@ -1,4 +1,5 @@
 const { procesarMrp } = require('../services/mrp.manager');
+const CorridasRepository = require('../repositories/corridas.repository');
 
 const calcularMrp = async (req, res) => {
   try {
@@ -9,6 +10,11 @@ const calcularMrp = async (req, res) => {
     }
 
     const resultadoFinal = await procesarMrp(horizonte, item || null);
+
+    // Persistir la corrida de forma transaccional
+    const usuarioId = req.body.usuarioId || null;
+    await CorridasRepository.guardar(horizonte, usuarioId, resultadoFinal);
+
     res.json(resultadoFinal);
   } catch (error) {
     console.error('Error en MRP:', error);

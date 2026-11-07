@@ -1,3 +1,4 @@
+const ArticulosRepository = require('../repositories/articulos.repository');
 const modelo = require('../models/model');
 const {
   validarCrearDemanda,
@@ -253,7 +254,7 @@ async function listarRecepcionesPorArticulo(req, res) {
     const { articuloId } = validarArticuloIdParam(req.params);
     const { periodo } = req.query;
 
-    const articulo = await modelo.obtenerArticuloPorId(articuloId);
+    const articulo = await ArticulosRepository.obtenerArticuloPorId(articuloId);
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
     }

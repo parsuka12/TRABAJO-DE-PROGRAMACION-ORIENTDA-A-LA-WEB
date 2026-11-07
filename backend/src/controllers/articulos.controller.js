@@ -1,4 +1,4 @@
-const modelo = require('../models/model');
+const ArticulosRepository = require('../repositories/articulos.repository');
 const {
   validarCrearArticulo,
   validarActualizarArticulo,
@@ -26,7 +26,7 @@ const manejarErrorValidacion = (error, res) => {
 // Consultar todos los artículos
 async function listarArticulos(req, res) {
   try {
-    const articulos = await modelo.obtenerArticulos();
+    const articulos = await ArticulosRepository.obtenerArticulos();
     res.json(articulos);
   } catch (error) {
     console.error(error);
@@ -39,7 +39,7 @@ async function buscarArticulo(req, res) {
   try {
     const { id } = validarIdParam(req.params);
 
-    const articulo = await modelo.obtenerArticuloPorId(id);
+    const articulo = await ArticulosRepository.obtenerArticuloPorId(id);
 
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
@@ -60,7 +60,7 @@ async function crearArticulo(req, res) {
   try {
     const datos = validarCrearArticulo(req.body);
 
-    const articulo = await modelo.crearArticulo(datos);
+    const articulo = await ArticulosRepository.crearArticulo(datos);
 
     res.status(201).json({
       mensaje: 'Artículo creado correctamente',
@@ -81,7 +81,7 @@ async function actualizarArticulo(req, res) {
     const { id } = validarIdParam(req.params);
     const datos = validarActualizarArticulo(req.body);
 
-    const articulo = await modelo.actualizarArticulo(id, datos);
+    const articulo = await ArticulosRepository.actualizarArticulo(id, datos);
 
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
@@ -105,7 +105,7 @@ async function eliminarArticulo(req, res) {
   try {
     const { id } = validarIdParam(req.params);
 
-    const articulo = await modelo.eliminarArticulo(id);
+    const articulo = await ArticulosRepository.eliminarArticulo(id);
 
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
@@ -140,7 +140,7 @@ async function actualizarStock(req, res) {
       });
     }
 
-    const articulo = await modelo.cambiarStock(id, stock);
+    const articulo = await ArticulosRepository.cambiarStock(id, stock);
 
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });

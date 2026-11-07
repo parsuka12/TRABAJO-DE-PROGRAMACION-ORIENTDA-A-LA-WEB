@@ -1,3 +1,4 @@
+const ArticulosRepository = require('../repositories/articulos.repository');
 const modelo = require('../models/model');
 const {
   validarCrearBom,
@@ -36,7 +37,7 @@ async function obtenerBomDeArticulo(req, res) {
     const { id } = validarIdParam(req.params);
 
     // Verificar que el artículo existe
-    const articulo = await modelo.obtenerArticuloPorId(id);
+    const articulo = await ArticulosRepository.obtenerArticuloPorId(id);
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
     }
@@ -57,7 +58,7 @@ async function obtenerDondeSeUsa(req, res) {
   try {
     const { id } = validarIdParam(req.params);
 
-    const articulo = await modelo.obtenerArticuloPorId(id);
+    const articulo = await ArticulosRepository.obtenerArticuloPorId(id);
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
     }
@@ -78,7 +79,7 @@ async function obtenerArbolBom(req, res) {
   try {
     const { id } = validarIdParam(req.params);
 
-    const articulo = await modelo.obtenerArticuloPorId(id);
+    const articulo = await ArticulosRepository.obtenerArticuloPorId(id);
     if (!articulo) {
       return res.status(404).json({ mensaje: 'No se encontró el artículo' });
     }

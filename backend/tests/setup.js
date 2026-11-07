@@ -77,6 +77,15 @@ async function inicializarEsquema() {
         cantidad NUMERIC(10,2) NOT NULL CHECK (cantidad > 0)
     );
 
+    -- Tabla de corridas (ejecuciones de MRP)
+    CREATE TABLE IF NOT EXISTS corridas (
+        id SERIAL PRIMARY KEY,
+        fecha TIMESTAMP DEFAULT NOW(),
+        horizonte INTEGER,
+        usuario_id INTEGER,
+        resultado JSONB
+    );
+
     -- Índices
     CREATE INDEX IF NOT EXISTS idx_bom_componente ON bom(componente_id);
     CREATE INDEX IF NOT EXISTS idx_demandas_articulo ON demandas(articulo_id);
