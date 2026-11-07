@@ -95,3 +95,4 @@ CREATE INDEX IF NOT EXISTS idx_recepciones_articulo ON recepciones(articulo_id);
 y los entrega en el formato del motor (`backend/src/services/mrp.service.js`).
 Con los datos de `docs/datos_ejemplo.sql` el resultado esperado es BICI 40, RUEDA 40 y CUADRO 25.
 
+
