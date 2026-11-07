@@ -58,7 +58,7 @@ async function migrar() {
 
       // Saltar si ya fue aplicada
       if (versionesAplicadas.has(version)) {
-        console.log(`⏭️  Migración ${version} ya aplicada, saltando.`);
+        console.log(` Migración ${version} ya aplicada, saltando.`);
         continue;
       }
 
@@ -73,20 +73,20 @@ async function migrar() {
         [version]
       );
 
-      console.log(`✅ Migración ${version} aplicada correctamente.`);
+      console.log(` Migración ${version} aplicada correctamente.`);
       ejecutadas++;
     }
 
     await client.query('COMMIT');
 
     if (ejecutadas === 0) {
-      console.log('ℹ️  No hay migraciones pendientes.');
+      console.log(' No hay migraciones pendientes.');
     } else {
-      console.log(`\n🎉 Se aplicaron ${ejecutadas} migración(es).`);
+      console.log(`\n Se aplicaron ${ejecutadas} migración(es).`);
     }
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('❌ Error ejecutando migraciones:', error.message);
+    console.error(' Error ejecutando migraciones:', error.message);
     throw error;
   } finally {
     client.release();
