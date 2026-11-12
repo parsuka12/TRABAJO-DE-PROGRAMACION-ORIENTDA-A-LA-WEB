@@ -312,10 +312,11 @@ async function agregarDemanda() {
     }
 
     demandasMRP.push({
-      item: codigo,
-      periodo: periodo,
-      qty: cantidad
-    });
+  id: Number(resultado.demanda.id),
+  item: codigo,
+  periodo: periodo,
+  qty: cantidad
+});
 
     mostrarDemandas();
 
@@ -395,9 +396,35 @@ async function cargarDemandas() {
 
 
 // Eliminar una demanda
-function eliminarDemanda(indice) {
-  demandasMRP.splice(indice, 1);
-  mostrarDemandas();
+async function eliminarDemanda(indice) {
+  const demanda = demandasMRP[indice];
+
+  if (!demanda || !demanda.id) {
+    alert('No se encontró el ID de la demanda.');
+    return;
+  }
+
+  try {
+    const respuesta = await fetch(`/api/demandas/${demanda.id}`, {
+      method: 'DELETE'
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(resultado.mensaje || 'No se pudo eliminar la demanda.');
+    }
+
+    demandasMRP.splice(indice, 1);
+    mostrarDemandas();
+
+    $('mrpMsg').className = 'ok';
+    $('mrpMsg').textContent = 'Demanda eliminada correctamente de PostgreSQL.';
+
+  } catch (error) {
+    $('mrpMsg').className = 'err';
+    $('mrpMsg').textContent = error.message;
+  }
 }
 async function ejecutarMrp() {
   const campo = $('horizonteMrp');
