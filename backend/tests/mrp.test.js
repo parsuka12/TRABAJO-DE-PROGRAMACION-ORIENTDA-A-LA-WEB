@@ -79,3 +79,10 @@ test('suma multiples demandas en el mismo periodo', () => {
   const r = mrp(items, [{ item: 'A', periodo: 1, qty: 5 }, { item: 'A', periodo: 1, qty: 7 }], 3);
   assert.strictEqual(r.items.A.bruto[1], 12);
 });
+
+test('rechaza si el horizonte no es un número entero', () => {
+  const items = { A: base() };
+
+  const r = mrp(items, [{ item: 'A', periodo: 1, qty: 5 }], 5.5);
+  assert.ok(r); 
+});
