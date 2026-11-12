@@ -10,6 +10,8 @@ const articulosRoutes = require('./routes/articulos.routes');
 const bomRoutes = require('./routes/bom.routes');
 const demandasRoutes = require('./routes/demandas.routes');
 const mrpRoutes = require('./routes/mrp.routes');
+const authRoutes = require('./routes/auth.routes');
+const { auth, requireRole } = require('./middlewares/auth.middleware');
 const { errorHandler } = require('./middlewares/errorHandler.middleware');
 
 const app = express();
@@ -21,15 +23,16 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../frontend')));
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/auth', authRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ mensaje: 'API del proyecto MRP Industrial funcionando' });
 });
 
-app.use('/api/articulos', articulosRoutes);
-app.use('/api', bomRoutes);
-app.use('/api', demandasRoutes);
-app.use('/api/mrp', mrpRoutes);
+app.use('/api/articulos', auth, articulosRoutes);
+app.use('/api', auth, bomRoutes);
+app.use('/api', auth, demandasRoutes);
+app.use('/api/mrp', auth, requireRole('planificador'), mrpRoutes);
 
 app.use(errorHandler);
 

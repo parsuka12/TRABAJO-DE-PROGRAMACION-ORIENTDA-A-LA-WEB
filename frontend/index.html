@@ -38,7 +38,29 @@ button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 10
 <body>
 <header><h1>MRP Industrial · Artículos</h1></header>
 <main>
-  <<div class="card">
+  <div class="card" id="loginCard">
+  <h2>Iniciar sesión</h2>
+
+  <form onsubmit="iniciarSesion(event)">
+    <p>
+      <input id="loginEmail" type="email"
+        placeholder="Correo electrónico" required>
+    </p>
+
+    <p>
+      <input id="loginPassword" type="password"
+        placeholder="Contraseña" required>
+    </p>
+
+    <button type="submit">Ingresar</button>
+  </form>
+
+  <div id="loginMsg"></div>
+</div>
+
+<div id="appContent" hidden>
+
+  <div class="card">
   <h2>Artículos</h2>
 
   <div class="barra-busqueda">
@@ -112,10 +134,67 @@ button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 10
   <div id="mrpMsg" aria-live="polite"></div>
   <div id="mrpResultado"></div>
 </div>
+</div>
 </main>
 
 <script>
 const $ = (id) => document.getElementById(id);
+async function apiFetch(url, options = {}) {
+  const token = sessionStorage.getItem('token');
+
+  const headers = {
+    ...(options.headers || {}),
+    Authorization: `Bearer ${token}`
+  };
+
+  return fetch(url, {
+    ...options,
+    headers
+  });
+}
+
+async function iniciarSesion(event) {
+  event.preventDefault();
+
+  const email = $('loginEmail').value.trim();
+  const password = $('loginPassword').value;
+  const msg = $('loginMsg');
+
+  try {
+    const respuesta = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(resultado.mensaje || 'Error al iniciar sesión.');
+    }
+
+    if (resultado.usuario.rol !== 'planificador') {
+      throw new Error('Este usuario no tiene permisos de planificador.');
+    }
+
+    sessionStorage.setItem('token', resultado.token);
+
+$('loginCard').hidden = true;
+$('appContent').hidden = false;
+
+msg.className = 'ok';
+msg.textContent = 'Inicio de sesión correcto.';
+
+await cargarArticulos();
+await cargarDemandas();
+
+  } catch (error) {
+    msg.className = 'err';
+    msg.textContent = error.message;
+  }
+}
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({
   '&': '&amp;',
@@ -136,7 +215,7 @@ async function cargarArticulos() {
   cont.textContent = 'Cargando articulos...';
 
   try {
-    const respuesta = await fetch('/api/articulos');
+    const respuesta = await apiFetch('/api/articulos')
 
     if (!respuesta.ok) {
       throw new Error('No se pudieron cargar los articulos.');
@@ -293,7 +372,7 @@ async function agregarDemanda() {
   }
 
   try {
-    const respuesta = await fetch('/api/demandas', {
+    const respuesta = await apiFetch('/api/demandas', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -372,7 +451,7 @@ function mostrarDemandas() {
 // Consultar las demandas guardadas en PostgreSQL
 async function cargarDemandas() {
   try {
-    const respuesta = await fetch('/api/demandas');
+    const respuesta = await apiFetch('/api/demandas')
     const datos = await respuesta.json();
 
     if (!respuesta.ok) {
@@ -405,7 +484,7 @@ async function eliminarDemanda(indice) {
   }
 
   try {
-    const respuesta = await fetch(`/api/demandas/${demanda.id}`, {
+    const respuesta = await apiFetch(`/api/demandas/${demanda.id}`, {
       method: 'DELETE'
     });
 
@@ -449,7 +528,7 @@ if (demandasMRP.length === 0) {
   msg.textContent = 'Calculando materiales...';
 
   try {
-    const respuesta = await fetch('/api/mrp/run', {
+    const respuesta = await apiFetch('/api/mrp/run', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
