@@ -266,15 +266,15 @@ async function guardarStock(id) {
 // Almacenar las demandas ingresadas
 let demandasMRP = [];
 
-// Agregar una demanda
-function agregarDemanda() {
-  const item = $('articuloDemanda').value;
+// Agregar y guardar una demanda en PostgreSQL
+async function agregarDemanda() {
+  const codigo = $('articuloDemanda').value;
   const cantidad = Number($('cantidadDemanda').value);
   const periodo = Number($('periodoDemanda').value);
   const horizonte = Number($('horizonteMrp').value);
 
   if (!Number.isInteger(cantidad) || cantidad <= 0) {
-    alert('Ingresa una cantidad válida mayor que cero.');
+    alert('La cantidad debe ser un entero mayor que cero.');
     return;
   }
 
@@ -283,16 +283,52 @@ function agregarDemanda() {
     return;
   }
 
-  demandasMRP.push({
-    item,
-    periodo: periodo - 1,
-    qty: cantidad
-  });
+  const articulo = articulosCargados.find(
+    a => String(a.codigo) === codigo
+  );
 
-  mostrarDemandas();
+  if (!articulo) {
+    alert('No se encontró el artículo seleccionado.');
+    return;
+  }
 
-  $('cantidadDemanda').value = '';
-  $('periodoDemanda').value = '';
+  try {
+    const respuesta = await fetch('/api/demandas', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        articulo_id: Number(articulo.id),
+        periodo: periodo,
+        cantidad: cantidad
+      })
+    });
+
+    const resultado = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(resultado.mensaje || 'No se pudo guardar la demanda.');
+    }
+
+    demandasMRP.push({
+      item: codigo,
+      periodo: periodo,
+      qty: cantidad
+    });
+
+    mostrarDemandas();
+
+    $('cantidadDemanda').value = '';
+    $('periodoDemanda').value = '';
+
+    $('mrpMsg').className = 'ok';
+    $('mrpMsg').textContent = 'Demanda guardada correctamente en PostgreSQL.';
+
+  } catch (error) {
+    $('mrpMsg').className = 'err';
+    $('mrpMsg').textContent = error.message;
+  }
 }
 
 // Mostrar demandas registradas
@@ -319,7 +355,7 @@ function mostrarDemandas() {
           <tr>
             <td>${esc(d.item)}</td>
             <td>${d.qty}</td>
-            <td>${d.periodo + 1}</td>
+            <td>${esc(d.periodo)}</td>
             <td>
               <button type="button" onclick="eliminarDemanda(${i})">
                 Eliminar
@@ -331,6 +367,32 @@ function mostrarDemandas() {
     </table>
   `;
 }
+
+// Consultar las demandas guardadas en PostgreSQL
+async function cargarDemandas() {
+  try {
+    const respuesta = await fetch('/api/demandas');
+    const datos = await respuesta.json();
+
+    if (!respuesta.ok) {
+      throw new Error(datos.mensaje || 'Error al consultar demandas.');
+    }
+
+    demandasMRP = datos.map(d => ({
+      id: Number(d.id),
+      item: d.articulo_codigo,
+      periodo: Number(d.periodo),
+      qty: Number(d.cantidad)
+    }));
+
+    mostrarDemandas();
+
+  } catch (error) {
+    $('mrpMsg').className = 'err';
+    $('mrpMsg').textContent = error.message;
+  }
+}
+
 
 // Eliminar una demanda
 function eliminarDemanda(indice) {
@@ -439,6 +501,7 @@ if (demandasMRP.length === 0) {
   }
 }
 cargarArticulos();
+cargarDemandas();
 </script>
 </body>
 </html>
