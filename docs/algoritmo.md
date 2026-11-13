@@ -44,3 +44,23 @@ npm test ejecuta backend/tests/mrp.test.js (7 casos: inventario y lead time, ít
 1. Entrar a la carpeta `backend`.
 2. Ejecutar `npm test`.
 3. Deben salir 7 pruebas aprobadas.
+
+## Segundo Ejemplo de Cálculo: Mesa de Madera
+
+Para demostrar la versatilidad del algoritmo, analicemos un producto con un BOM de dos niveles y tiempos de entrega más largos.
+
+**Datos iniciales:**
+*   **MESA:** Stock 0, Lead Time 2, Lote Mínimo 5.
+*   **TABLON:** Stock 10, Lead Time 3, Lote Mínimo 10, Múltiplo 5.
+*   **TORNILLO:** Stock 100, Lead Time 1, Lote Mínimo 50, Múltiplo 50.
+*   **BOM MESA:** 4 Tablones y 12 Tornillos.
+*   **Demanda:** 10 Mesas en el período 5.
+
+**Resolución paso a paso:**
+1.  **Nivel 0 (MESA):** Demanda bruta = 10. Stock = 0. Requerimiento neto = 10. Al aplicar lote mínimo (5), se piden 10. Como el Lead Time es 2, se lanza en el período 3.
+2.  **Explosión a Nivel 1:**
+    *   **TABLON:** Requerimiento bruto = 10 (mesas) * 4 = 40. Restando stock (10), el neto es 30. Con lote mínimo y múltiplo, la orden es de 30. Se lanza en el período 0 (3 - 3 de Lead Time).
+    *   **TORNILLO:** Requerimiento bruto = 10 * 12 = 120. Restando stock (100), el neto es 20. Aplicando el lote mínimo de 50, se piden 50. Se lanza en el período 2.
+
+**Resultado esperado:**
+El sistema debe generar 3 órdenes de producción/compra, demostrando que el inventario de tornillos se descuenta correctamente y que los lotes mínimos fuerzan compras de mayores cantidades.
